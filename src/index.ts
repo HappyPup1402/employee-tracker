@@ -1,5 +1,5 @@
 import inquirer from 'inquirer';
-import { pool, connectToDb } from './connection'; // Make sure to adjust the import path for your db file
+import { pool, connectToDb } from './connection';
 
 // Connect to the database
 connectToDb();
@@ -108,3 +108,147 @@ const viewDepartmentBudget = async (departmentId: number) => {
     `, [departmentId]);
     console.log(`Total utilized budget for department ID ${departmentId}: $${result.rows[0].total_budget}`);
 };
+
+const mainMenu = async () => {
+    const { action } = await inquirer.prompt({
+        type: 'list',
+        name: 'action',
+        message: 'What would you like to do?',
+        choices: [
+            'View all departments',
+            'View all roles',
+            'View all employees',
+            'Add a department',
+            'Add a role',
+            'Add an employee',
+            'Update an employee role',
+            'Update an employee manager',
+            'View employees by manager',
+            'View employees by department',
+            'Delete a department',
+            'Delete a role',
+            'Delete an employee',
+            'View department budget',
+            'Exit',
+        ],
+    });
+
+    switch (action) {
+        case 'View all departments':
+            await viewDepartments();
+            break;
+        case 'View all roles':
+            await viewRoles();
+            break;
+        case 'View all employees':
+            await viewEmployees();
+            break;
+        case 'Add a department':
+            const { departmentName } = await inquirer.prompt({
+                type: 'input',
+                name: 'departmentName',
+                message: 'Enter the department name:',
+            });
+            await addDepartment(departmentName);
+            break;
+        case 'Add a role':
+            const { roleName, roleSalary, departmentId } = await inquirer.prompt([
+                { type: 'input', name: 'roleName', message: 'Enter the role name:' },
+                { type: 'input', name: 'roleSalary', message: 'Enter the role salary:' },
+                { type: 'input', name: 'departmentId', message: 'Enter the department ID for this role:' },
+            ]);
+            await addRole(roleName, parseFloat(roleSalary), parseInt(departmentId));
+            break;
+            case 'Add an employee':
+                const { firstName, lastName, roleId, managerIdInput } = await inquirer.prompt([
+                    { type: 'input', name: 'firstName', message: "Enter the employee's first name:" },
+                    { type: 'input', name: 'lastName', message: "Enter the employee's last name:" },
+                    { type: 'input', name: 'roleId', message: "Enter the employee's role ID:" },
+                    { 
+                        type: 'input', 
+                        name: 'managerIdInput', 
+                        message: "Enter the employee's manager ID (leave blank if none):", 
+                        default: ''
+                    },
+                ]);
+                await addEmployee(firstName, lastName, parseInt(roleId), managerIdInput ? parseInt(managerIdInput) : null);
+                break;
+        case 'Update an employee role':
+            const { employeeId, newRoleId } = await inquirer.prompt([
+                { type: 'input', name: 'employeeId', message: 'Enter the employee ID to update:' },
+                { type: 'input', name: 'newRoleId', message: 'Enter the new role ID:' },
+            ]);
+            await updateEmployeeRole(parseInt(employeeId), parseInt(newRoleId));
+            break;
+            case 'Update an employee manager':
+                const { empId, newManagerId } = await inquirer.prompt([
+                    { type: 'input', name: 'empId', message: 'Enter the employee ID to update manager:' },
+                    { 
+                        type: 'input', 
+                        name: 'newManagerId', 
+                        message: 'Enter the new manager ID (leave blank if none):', 
+                        default: ''
+                    },
+                ]);
+                await updateEmployeeManager(parseInt(empId), newManagerId ? parseInt(newManagerId) : null);
+                break;
+        case 'View employees by manager':
+            const { managerId } = await inquirer.prompt({
+                type: 'input',
+                name: 'managerId',
+                message: 'Enter the manager ID:',
+            });
+            await viewEmployeesByManager(parseInt(managerId));
+            break;
+        case 'View employees by department':
+            const { deptId } = await inquirer.prompt({
+                type: 'input',
+                name: 'deptId',
+                message: 'Enter the department ID:',
+            });
+            await viewEmployeesByDepartment(parseInt(deptId));
+            break;
+        case 'Delete a department':
+            const { deleteDeptId } = await inquirer.prompt({
+                type: 'input',
+                name: 'deleteDeptId',
+                message: 'Enter the department ID to delete:',
+            });
+            await deleteDepartment(parseInt(deleteDeptId));
+            break;
+        case 'Delete a role':
+            const { deleteRoleId } = await inquirer.prompt({
+                type: 'input',
+                name: 'deleteRoleId',
+                message: 'Enter the role ID to delete:',
+            });
+            await deleteRole(parseInt(deleteRoleId));
+            break;
+        case 'Delete an employee':
+            const { deleteEmployeeId } = await inquirer.prompt({
+                type: 'input',
+                name: 'deleteEmployeeId',
+                message: 'Enter the employee ID to delete:',
+            });
+            await deleteEmployee(parseInt(deleteEmployeeId));
+            break;
+        case 'View department budget':
+            const { budgetDeptId } = await inquirer.prompt({
+                type: 'input',
+                name: 'budgetDeptId',
+                message: 'Enter the department ID to view budget:',
+            });
+            await viewDepartmentBudget(parseInt(budgetDeptId));
+            break;
+        case 'Exit':
+            console.log('Exiting application. Goodbye!');
+            process.exit();
+            break;
+    }
+
+    // Loop back to the main menu after each action
+    await mainMenu();
+};
+
+// Start the application
+mainMenu();
